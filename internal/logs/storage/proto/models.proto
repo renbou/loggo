@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package obzerva.logs.storage.models;
+option go_package = "github.com/renbou/obzerva/internal/logs/storage/models";
+
+// FlatMessage is used for storing unnested log messages so that they can later be searched
+// through in an optimal manner. Fields of the message are stored in a sorted order,
+// allowing access in O(logN) without constructing a new map every time.
+// :TODO: use vtproto pool for fast unmarshaling 
+message FlatMessage {
+  message KV {
+    string key = 1;
+    string value = 2;
+  }
+
+  repeated KV fields = 1;
+}
