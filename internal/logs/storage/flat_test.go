@@ -77,6 +77,15 @@ func Test_Flatten_Positive(t *testing.T) {
 				{Key: "3.key1.key2", Value: "3"},
 			},
 		},
+		{
+			name:    "sorted keys",
+			message: `{"z": 1, "a": "x", "b": false}`,
+			fields: []*models.FlatMessage_KV{
+				{Key: "a", Value: "x"},
+				{Key: "b", Value: "false"},
+				{Key: "z", Value: "1"},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -86,7 +95,7 @@ func Test_Flatten_Positive(t *testing.T) {
 
 			expectFields := tt.fields
 
-			gotFields := flatten(tt.message).Fields
+			gotFields := flatten([]byte(tt.message)).Fields
 
 			assert.Equal(t, expectFields, gotFields)
 		})
@@ -131,11 +140,76 @@ func Test_Flatten_Negative(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			gotFields := flatten(tt.message).Fields
+			gotFields := flatten([]byte(tt.message)).Fields
 
 			// Any error should result in no parsed message fields. This will still allow the log message to
 			// be found using a non-scoped search, but will help us avoid incorrect lookups.
 			assert.Nil(t, gotFields)
+		})
+	}
+}
+
+func Test_FlatMessageToMapping(t *testing.T) {
+	t.Parallel()
+
+	const message = `{"key": "value", "a": 1337, "x": false, "nested": {"a": 1}}`
+
+	// Both the flatMessage and the flatMapping should be reusable concurrently,
+	// since only reads are performed once a flatMessage is constructed
+	flatMessage := flatten([]byte(message))
+	flatMapping := flatMessageToMapping(&flatMessage)
+
+	tests := []struct {
+		key   string
+		value string
+		found bool
+	}{
+		{
+			key:   "key",
+			value: "value",
+			found: true,
+		},
+		{
+			key:   "a",
+			value: "1337",
+			found: true,
+		},
+		{
+			key:   "x",
+			value: "false",
+			found: true,
+		},
+		{
+			key:   "nested",
+			found: false,
+		},
+		{
+			key:   "nested.a",
+			value: "1",
+			found: true,
+		},
+		{
+			key:   "nonexistent",
+			found: false,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.key, func(t *testing.T) {
+			t.Parallel()
+
+			expectedValue := tt.value
+
+			gotValue, gotOk := flatMapping(tt.key)
+
+			if !tt.found {
+				assert.False(t, gotOk)
+				return
+			}
+
+			assert.True(t, gotOk)
+			assert.Equal(t, expectedValue, gotValue)
 		})
 	}
 }

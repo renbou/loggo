@@ -1,8 +1,10 @@
 package storage
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -26,8 +28,8 @@ type flattenDecoder struct {
 // allowing only for non-scoped searches in the storage.
 // If an error is encountered while iterating through the message,
 // an empty FlatMessage is returned, just like for non-object/non-array messages.
-func flatten(message string) models.FlatMessage {
-	mr := strings.NewReader(message)
+func flatten(message []byte) models.FlatMessage {
+	mr := bytes.NewReader(message)
 
 	// UseNumber is needed to avoid screwing with the number representations
 	decoder := flattenDecoder{Decoder: json.NewDecoder(mr)}
@@ -44,7 +46,13 @@ func flatten(message string) models.FlatMessage {
 		return models.FlatMessage{}
 	}
 
-	return models.FlatMessage{Fields: decoder.message.Fields}
+	// Sort fields by key to allow binary search for fast access later
+	fields := decoder.message.Fields
+	sort.Slice(fields, func(i, j int) bool {
+		return fields[i].Key < fields[j].Key
+	})
+
+	return models.FlatMessage{Fields: fields}
 }
 
 // flatten here is called recursively after preparing the decoder,
@@ -153,4 +161,18 @@ func (d *flattenDecoder) formatKey(prefix, key string) string {
 		return prefix + "." + key
 	}
 	return key
+}
+
+// flatMessageToMapping returns a FlatMapping which searches through the FlatMessage using binary search.
+func flatMessageToMapping(message *models.FlatMessage) FlatMapping {
+	return func(key string) (value string, ok bool) {
+		i, found := sort.Find(len(message.Fields), func(i int) int {
+			return strings.Compare(key, message.Fields[i].Key)
+		})
+
+		if !found {
+			return "", false
+		}
+		return message.Fields[i].Value, true
+	}
 }
