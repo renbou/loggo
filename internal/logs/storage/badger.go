@@ -2,6 +2,7 @@ package storage
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -122,7 +123,7 @@ func (b *Badger) ListMessages(from, to time.Time, filter Filter, after []byte, l
 				break
 			}
 
-			if uint(len(batch.Messages)) == limit {
+			if limit != 0 && uint(len(batch.Messages)) == limit {
 				batch.Next = item.KeyCopy(nil)
 				break
 			}
@@ -153,6 +154,33 @@ func (b *Badger) ListMessages(from, to time.Time, filter Filter, after []byte, l
 	}
 
 	return batch, nil
+}
+
+// StreamMessages should be used when messages need to be streamed in real-time starting from some
+// timestamp. Like ListMessages, a Batch is returned consisting of the latest messages after "from",
+// meaning that, if there are lots of such messages, only a small part is returned in the Batch
+// and its Next field is set, which can then be used with ListMessages like usual.
+// New messages that arive after the batch are passed through the returned channel until the passed context is done.
+func (b *Badger) StreamMessages(ctx context.Context, from time.Time, filter Filter, limit uint,
+) (Batch, chan Message, error) {
+	batch, err := b.ListMessages(from, time.Now(), filter, nil, limit)
+	if err != nil {
+		return Batch{}, nil, fmt.Errorf("retrieving first batch: %w", err)
+	}
+
+	// After getting the first batch we can safely create a channel and register it with the realtime queue.
+	// Deletion is then implemented using a simple goroutine watching for ctx.Done.
+	ch := make(chan Message)
+	el := b.queue.add(&realtimeRequest{filter, ch})
+	go func() {
+		<-ctx.Done()
+		b.queue.delete(el)
+
+		// close specifically *after* the element is gone from the queue
+		close(ch)
+	}()
+
+	return batch, ch, nil
 }
 
 // runGC runs the badgerDB log GC in the background, which should be good enough for our simple use case

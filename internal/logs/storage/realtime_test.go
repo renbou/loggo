@@ -98,7 +98,7 @@ func Test_RealtimeQueue_Parallel(t *testing.T) {
 	consumers := []*mockRealtimeConsumer{
 		// Simple field filter
 		addMockRealtimeConsumer(queue, channels[0],
-			func(m Message, fm FlatMapping) bool {
+			func(_ Message, fm FlatMapping) bool {
 				v, ok := fm("key")
 				return ok && strings.Contains(v, "pointless")
 			},
@@ -108,7 +108,7 @@ func Test_RealtimeQueue_Parallel(t *testing.T) {
 
 		// Nested filter
 		addMockRealtimeConsumer(queue, channels[1],
-			func(m Message, fm FlatMapping) bool {
+			func(_ Message, fm FlatMapping) bool {
 				v, ok := fm("nested.value")
 				return ok && v == "true"
 			},

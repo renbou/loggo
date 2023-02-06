@@ -13,10 +13,10 @@ var logsSequenceKey = []byte("sequence:logs")
 // of course this will always be unique in a normal use case, but just in case,
 // all keys will be prefixed using integers from the badger db sequence
 func messagePrefix(t time.Time) []byte {
-	return []byte(fmt.Sprintf("%s:%d", logsPrefix, t.UnixNano()))
+	return []byte(fmt.Sprintf("%s:%020d", logsPrefix, t.UnixNano()))
 }
 
 // messageKey is like messagePrefix but with an additional sequence number to guarantee uniqueness
 func messageKey(t time.Time, seq uint64) []byte {
-	return []byte(fmt.Sprintf("%s:%d:%d", logsPrefix, t.UnixNano(), seq))
+	return []byte(fmt.Sprintf("%s:%020d:%d", logsPrefix, t.UnixNano(), seq))
 }
