@@ -87,7 +87,7 @@ func Test_RealtimeQueue_Parallel(t *testing.T) {
 		Message(`[1, 2, 3, 4]`),
 	}
 
-	var flat []models.FlatMessage
+	var flat []*models.FlatMessage
 	var channels []chan Message
 	for _, message := range messages {
 		flat = append(flat, flatten(message))
@@ -158,7 +158,7 @@ func Test_RealtimeQueue_Parallel(t *testing.T) {
 		producer := mockMessageProducer{
 			queue:   queue,
 			message: messages[i],
-			flat:    &flat[i],
+			flat:    flat[i],
 			n:       producerN,
 		}
 

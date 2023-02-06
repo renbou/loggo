@@ -157,7 +157,7 @@ func Test_FlatMessageToMapping(t *testing.T) {
 	// Both the flatMessage and the flatMapping should be reusable concurrently,
 	// since only reads are performed once a flatMessage is constructed
 	flatMessage := flatten([]byte(message))
-	flatMapping := flatMessageToMapping(&flatMessage)
+	flatMapping := flatMessageToMapping(flatMessage)
 
 	tests := []struct {
 		key   string

@@ -28,7 +28,7 @@ type flattenDecoder struct {
 // allowing only for non-scoped searches in the storage.
 // If an error is encountered while iterating through the message,
 // an empty FlatMessage is returned, just like for non-object/non-array messages.
-func flatten(message []byte) models.FlatMessage {
+func flatten(message []byte) *models.FlatMessage {
 	mr := bytes.NewReader(message)
 
 	// UseNumber is needed to avoid screwing with the number representations
@@ -36,14 +36,14 @@ func flatten(message []byte) models.FlatMessage {
 	decoder.UseNumber()
 
 	if ok := decoder.flatten("", false); !ok {
-		return models.FlatMessage{}
+		return &models.FlatMessage{}
 	}
 
 	// Make sure there's no superfluous input left,
 	// it's better to show an error somewhere later than to silently lose data
 	_, err := decoder.Token()
 	if err != io.EOF {
-		return models.FlatMessage{}
+		return &models.FlatMessage{}
 	}
 
 	// Sort fields by key to allow binary search for fast access later
@@ -52,7 +52,7 @@ func flatten(message []byte) models.FlatMessage {
 		return fields[i].Key < fields[j].Key
 	})
 
-	return models.FlatMessage{Fields: fields}
+	return &models.FlatMessage{Fields: fields}
 }
 
 // flatten here is called recursively after preparing the decoder,

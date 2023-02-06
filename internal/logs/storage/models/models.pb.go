@@ -4,6 +4,8 @@
 // 	protoc        v3.21.12
 // source: internal/logs/storage/proto/models.proto
 
+// :TODO: use vtproto pool for fast unmarshaling
+
 package models
 
 import (
@@ -23,7 +25,6 @@ const (
 // FlatMessage is used for storing unnested log messages so that they can later be searched
 // through in an optimal manner. Fields of the message are stored in a sorted order,
 // allowing access in O(logN) without constructing a new map every time.
-// :TODO: use vtproto pool for fast unmarshaling
 type FlatMessage struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -71,6 +72,63 @@ func (x *FlatMessage) GetFields() []*FlatMessage_KV {
 	return nil
 }
 
+// PreparedMessage is the message actually stored in the database, consisting of the original message,
+// which will then be returned from the storage, and a flattened version which is used for fast search.
+type PreparedMessage struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Message []byte       `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	Flat    *FlatMessage `protobuf:"bytes,2,opt,name=flat,proto3" json:"flat,omitempty"`
+}
+
+func (x *PreparedMessage) Reset() {
+	*x = PreparedMessage{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_internal_logs_storage_proto_models_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *PreparedMessage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PreparedMessage) ProtoMessage() {}
+
+func (x *PreparedMessage) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_logs_storage_proto_models_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PreparedMessage.ProtoReflect.Descriptor instead.
+func (*PreparedMessage) Descriptor() ([]byte, []int) {
+	return file_internal_logs_storage_proto_models_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *PreparedMessage) GetMessage() []byte {
+	if x != nil {
+		return x.Message
+	}
+	return nil
+}
+
+func (x *PreparedMessage) GetFlat() *FlatMessage {
+	if x != nil {
+		return x.Flat
+	}
+	return nil
+}
+
 type FlatMessage_KV struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -83,7 +141,7 @@ type FlatMessage_KV struct {
 func (x *FlatMessage_KV) Reset() {
 	*x = FlatMessage_KV{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_internal_logs_storage_proto_models_proto_msgTypes[1]
+		mi := &file_internal_logs_storage_proto_models_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -96,7 +154,7 @@ func (x *FlatMessage_KV) String() string {
 func (*FlatMessage_KV) ProtoMessage() {}
 
 func (x *FlatMessage_KV) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_logs_storage_proto_models_proto_msgTypes[1]
+	mi := &file_internal_logs_storage_proto_models_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -141,11 +199,18 @@ var file_internal_logs_storage_proto_models_proto_rawDesc = []byte{
 	0x65, 0x2e, 0x4b, 0x56, 0x52, 0x06, 0x66, 0x69, 0x65, 0x6c, 0x64, 0x73, 0x1a, 0x2c, 0x0a, 0x02,
 	0x4b, 0x56, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
 	0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x42, 0x38, 0x5a, 0x36, 0x67, 0x69,
-	0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x72, 0x65, 0x6e, 0x62, 0x6f, 0x75, 0x2f,
-	0x6f, 0x62, 0x7a, 0x65, 0x72, 0x76, 0x61, 0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c,
-	0x2f, 0x6c, 0x6f, 0x67, 0x73, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x61, 0x67, 0x65, 0x2f, 0x6d, 0x6f,
-	0x64, 0x65, 0x6c, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x22, 0x69, 0x0a, 0x0f, 0x50, 0x72,
+	0x65, 0x70, 0x61, 0x72, 0x65, 0x64, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12, 0x18, 0x0a,
+	0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x07,
+	0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12, 0x3c, 0x0a, 0x04, 0x66, 0x6c, 0x61, 0x74, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x28, 0x2e, 0x6f, 0x62, 0x7a, 0x65, 0x72, 0x76, 0x61, 0x2e,
+	0x6c, 0x6f, 0x67, 0x73, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x61, 0x67, 0x65, 0x2e, 0x6d, 0x6f, 0x64,
+	0x65, 0x6c, 0x73, 0x2e, 0x46, 0x6c, 0x61, 0x74, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x52,
+	0x04, 0x66, 0x6c, 0x61, 0x74, 0x42, 0x38, 0x5a, 0x36, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e,
+	0x63, 0x6f, 0x6d, 0x2f, 0x72, 0x65, 0x6e, 0x62, 0x6f, 0x75, 0x2f, 0x6f, 0x62, 0x7a, 0x65, 0x72,
+	0x76, 0x61, 0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x6c, 0x6f, 0x67, 0x73,
+	0x2f, 0x73, 0x74, 0x6f, 0x72, 0x61, 0x67, 0x65, 0x2f, 0x6d, 0x6f, 0x64, 0x65, 0x6c, 0x73, 0x62,
+	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -160,18 +225,20 @@ func file_internal_logs_storage_proto_models_proto_rawDescGZIP() []byte {
 	return file_internal_logs_storage_proto_models_proto_rawDescData
 }
 
-var file_internal_logs_storage_proto_models_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_internal_logs_storage_proto_models_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_internal_logs_storage_proto_models_proto_goTypes = []interface{}{
-	(*FlatMessage)(nil),    // 0: obzerva.logs.storage.models.FlatMessage
-	(*FlatMessage_KV)(nil), // 1: obzerva.logs.storage.models.FlatMessage.KV
+	(*FlatMessage)(nil),     // 0: obzerva.logs.storage.models.FlatMessage
+	(*PreparedMessage)(nil), // 1: obzerva.logs.storage.models.PreparedMessage
+	(*FlatMessage_KV)(nil),  // 2: obzerva.logs.storage.models.FlatMessage.KV
 }
 var file_internal_logs_storage_proto_models_proto_depIdxs = []int32{
-	1, // 0: obzerva.logs.storage.models.FlatMessage.fields:type_name -> obzerva.logs.storage.models.FlatMessage.KV
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	2, // 0: obzerva.logs.storage.models.FlatMessage.fields:type_name -> obzerva.logs.storage.models.FlatMessage.KV
+	0, // 1: obzerva.logs.storage.models.PreparedMessage.flat:type_name -> obzerva.logs.storage.models.FlatMessage
+	2, // [2:2] is the sub-list for method output_type
+	2, // [2:2] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_internal_logs_storage_proto_models_proto_init() }
@@ -193,6 +260,18 @@ func file_internal_logs_storage_proto_models_proto_init() {
 			}
 		}
 		file_internal_logs_storage_proto_models_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*PreparedMessage); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_internal_logs_storage_proto_models_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*FlatMessage_KV); i {
 			case 0:
 				return &v.state
@@ -211,7 +290,7 @@ func file_internal_logs_storage_proto_models_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_internal_logs_storage_proto_models_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

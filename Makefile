@@ -24,9 +24,10 @@ COVER_HTML_REPORT ?= .cover.html
 COVER_FUNC_REPORT ?= .cover.func
 
 test:
-	go test -count=1 -race -covermode=atomic -coverpkg=./... -coverprofile ${COVER_TMP_FILE} -v ./...
+	go test -count=1 -race -v ./...
 
-cover: test
+cover:
+	go test -count=1 -race -covermode=atomic -coverpkg=./... -coverprofile ${COVER_TMP_FILE} -v ./...
 	cat ${COVER_TMP_FILE}   | \
 		grep -v ".*\.pb\.go" | \
 		cat - > ${COVER_FILE}
@@ -35,3 +36,4 @@ cover: test
 	else \
 		go tool cover -func ${COVER_FILE} -o ${COVER_FUNC_REPORT}; \
 	fi
+	rm -f ${COVER_TMP_FILE} ${COVER_FILE}
