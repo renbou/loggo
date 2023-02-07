@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/renbou/obzerva/internal/logs/storage/models"
+	"github.com/renbou/loggo/internal/storage/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

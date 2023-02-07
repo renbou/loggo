@@ -9,9 +9,9 @@ INSTALL_TOOL = test -f ${BINDIR}/`echo ${TOOLURL} | perl -ne 'if (/[\w.\/-]+\/([
 	test -d ${BINDIR} || mkdir -p ${BINDIR}
 
 # Proto generation
-PROTOC=protoc --go_opt=module=github.com/renbou/obzerva --go_out=. ${PROTO_PATH}
+PROTOC=protoc --go_opt=module=github.com/renbou/loggo --go_out=. ${PROTO_PATH}
 
-.generate-storage-proto: PROTO_PATH=internal/logs/storage/proto/models.proto
+.generate-storage-proto: PROTO_PATH=internal/storage/proto/models.proto
 .generate-storage-proto:
 	$(PROTOC)
 

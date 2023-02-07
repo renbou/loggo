@@ -3,7 +3,7 @@ package storage
 import (
 	"fmt"
 
-	"github.com/renbou/obzerva/internal/logs/storage/models"
+	"github.com/renbou/loggo/internal/storage/models"
 	"google.golang.org/protobuf/proto"
 )
 

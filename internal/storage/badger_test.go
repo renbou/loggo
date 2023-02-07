@@ -247,4 +247,5 @@ func Test_Badger_StreamMessages(t *testing.T) {
 
 	wg.Wait()
 	assert.Equal(t, expectChMessages, gotChMessages)
+	assert.Equal(t, 0, b.queue.list.Len())
 }

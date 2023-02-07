@@ -4,7 +4,7 @@ import (
 	"container/list"
 	"sync"
 
-	"github.com/renbou/obzerva/internal/logs/storage/models"
+	"github.com/renbou/loggo/internal/storage/models"
 )
 
 // realtimeRequest specifies a request which wants to receive logs in real-time

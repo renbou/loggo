@@ -9,7 +9,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/renbou/obzerva/internal/logs/storage/models"
+	"github.com/renbou/loggo/internal/storage/models"
 )
 
 var (
