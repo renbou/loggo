@@ -1,0 +1,10 @@
+storage:
+  directory: /path/to/dir
+grpc:
+  addr: :20081
+web:
+  addr: :20080
+auth:
+  users:
+    - username: user
+      password_hash: somehash

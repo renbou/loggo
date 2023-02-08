@@ -65,26 +65,32 @@ type loggoConfig struct {
 // Config stores the whole configuration used by Loggo, additionally wrapping it with modifications and hot-reloading.
 type Config struct {
 	mu sync.RWMutex
+	v  *viper.Viper
 	c  loggoConfig
 }
 
 // Read reads the configuration file, using the binded pflags for additional info.
 func Read(pflags *pflag.FlagSet) (*Config, error) {
+	v := viper.New()
+
 	if pflags != nil {
-		if err := viper.BindPFlags(pflags); err != nil {
+		if err := v.BindPFlags(pflags); err != nil {
 			return nil, fmt.Errorf("binding command line flags: %w", err)
 		}
 	}
 
 	// Storage directory and listener addresses are additionally pulled from the env
-	viper.SetEnvPrefix("loggo")
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	viper.AutomaticEnv()
+	v.SetEnvPrefix("loggo")
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.AutomaticEnv()
+	v.MustBindEnv("storage.directory")
+	v.MustBindEnv("grpc.addr")
+	v.MustBindEnv("web.addr")
 
-	viper.SetConfigType("yaml")
-	viper.SetConfigFile(viper.GetString("config"))
+	v.SetConfigType("yaml")
+	v.SetConfigFile(v.GetString("config"))
 
-	var config Config
+	config := Config{v: v}
 	if err := config.ReloadFromFile(); err != nil {
 		return nil, err
 	}
@@ -97,7 +103,7 @@ func (c *Config) Reload(config []byte) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if err := viper.ReadConfig(bytes.NewReader(config)); err != nil {
+	if err := c.v.ReadConfig(bytes.NewReader(config)); err != nil {
 		return fmt.Errorf("parsing config: %w", err)
 	}
 
@@ -116,7 +122,7 @@ func (c *Config) ReloadFromFile() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if err := viper.ReadInConfig(); err != nil {
+	if err := c.v.ReadInConfig(); err != nil {
 		return fmt.Errorf("reading config file: %w", err)
 	}
 
@@ -175,7 +181,7 @@ func (c *Config) AuthPigeons() map[string]string {
 
 func (c *Config) unmarshal() error {
 	var newCfg loggoConfig
-	if err := viper.UnmarshalExact(&newCfg); err != nil {
+	if err := c.v.UnmarshalExact(&newCfg); err != nil {
 		return fmt.Errorf("unmarshaling config file: %w", err)
 	}
 
@@ -211,7 +217,7 @@ func (c *Config) writeToFile() error {
 	}
 
 	// Write the config file atomically to avoid possible errors.
-	file := viper.ConfigFileUsed()
+	file := c.v.ConfigFileUsed()
 	if err := renameio.WriteFile(file, data, 0o644); err != nil {
 		return fmt.Errorf("atomically writing %s: %w", file, err)
 	}
