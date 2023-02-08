@@ -36,7 +36,7 @@ func Test_Logger(t *testing.T) {
 
 	expectMessages := []string{
 		`^{"level":"info","ts":".+","msg":"test informational message","field":"value","number":1337}$`,
-		`^{"level":"error","ts":".+","msg":"test error message","err":"fake error","stacktrace":".+"}$`,
+		`^{"level":"error","ts":".+","msg":"test error message","err":"fake error"}$`,
 	}
 
 	for i := range expectMessages {

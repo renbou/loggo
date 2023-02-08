@@ -58,6 +58,7 @@ func Sync() error {
 func newLogger(outputs ...string) (*zap.SugaredLogger, error) {
 	cfg := zap.NewProductionConfig()
 	cfg.DisableCaller = true
+	cfg.DisableStacktrace = true
 	cfg.EncoderConfig.EncodeDuration = zapcore.StringDurationEncoder
 	cfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	cfg.EncoderConfig.LineEnding = newline

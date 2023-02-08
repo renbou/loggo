@@ -54,7 +54,7 @@ func (s *consumerSink) send(m []byte) error {
 		return nil
 	}
 
-	if err := s.consumer(time.Now(), m); err != nil {
+	if err := s.consumer(time.Now(), append([]byte{}, m...)); err != nil {
 		return fmt.Errorf("sending log message to consumer (storage): %w", err)
 	}
 	return nil
