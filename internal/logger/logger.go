@@ -42,12 +42,12 @@ func InitGlobal(consumer LogConsumer, outputs ...string) error {
 
 // Infow logs an informational message to the global logger.
 func Infow(msg string, kvs ...any) {
-	globalLogger.Infow(msg, kvs...)
+	globalLogger.Infow(msg, appendGlobalKVs(kvs)...)
 }
 
 // Errorw logs an error message to the global logger.
 func Errorw(msg string, kvs ...any) {
-	globalLogger.Errorw(msg, kvs...)
+	globalLogger.Errorw(msg, appendGlobalKVs(kvs)...)
 }
 
 // Sync runs the global logger Sync routine. Meant to be run at the end of the app's execution.
@@ -88,4 +88,9 @@ func init() {
 	}
 
 	globalLogger = logger
+}
+
+// :TODO: redo using global logger package functions WithKVs, WithComponent, etc...
+func appendGlobalKVs(kvs []any) []any {
+	return append([]any{"service", "loggo"}, kvs...)
 }

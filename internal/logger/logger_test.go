@@ -35,8 +35,8 @@ func Test_Logger(t *testing.T) {
 	assert.NoError(t, Sync())
 
 	expectMessages := []string{
-		`^{"level":"info","ts":".+","msg":"test informational message","field":"value","number":1337}$`,
-		`^{"level":"error","ts":".+","msg":"test error message","err":"fake error"}$`,
+		`^{"level":"info","ts":".+","msg":"test informational message","service":"loggo","field":"value","number":1337}$`,
+		`^{"level":"error","ts":".+","msg":"test error message","service":"loggo","err":"fake error"}$`,
 	}
 
 	for i := range expectMessages {
