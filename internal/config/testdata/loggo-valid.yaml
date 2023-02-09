@@ -1,0 +1,8 @@
+auth:
+  users:
+    - username: username
+      password_hash: $2y$10$00iDz1fSEs.RrWniiJRP1ul.zyY8MsZM2rcBlXlkccOYfctpHNfMq
+  pigeons:
+    - name: pigeon
+      token: 0000-1111-2222
+  service_token: xxxx-yyyy-zzzz

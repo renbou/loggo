@@ -3,7 +3,9 @@ package config
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"sync"
 
@@ -18,7 +20,7 @@ const (
 // AuthUser contains credentials used to authenticate a single user.
 type AuthUser struct {
 	Username     string
-	PasswordHash string
+	PasswordHash string `yaml:"password_hash"`
 }
 
 // AuthPigeon contains credentials used to authenticate a single pigeon.
@@ -34,16 +36,17 @@ type AuthConfig struct {
 	ServiceToken string `yaml:"service_token"`
 }
 
-type mutableConfig struct {
+// MutableConfig contains all settings which can be changed during execution.
+type MutableConfig struct {
 	Auth AuthConfig
 }
 
-// Mutable contains mutable settings with support for hot-reloading and modifications.
+// Mutable wraps MutableConfig with support for hot-reloading and modifications.
 type Mutable struct {
 	path string
 
 	mu sync.RWMutex
-	c  mutableConfig
+	c  MutableConfig
 
 	// Username -> PasswordHash
 	userMap map[string]string
@@ -87,16 +90,20 @@ func (m *Mutable) AuthPigeons() map[string]string {
 	return m.pigeonMap
 }
 
-// SetAuthConfig changes the used auth configuration, if the one passed is valid.
-func (m *Mutable) SetAuthConfig(c AuthConfig) error {
-	if err := validateAuthConfig(&c); err != nil {
+// SetMutableConfig changes the used mutable config, if the one passed is valid.
+func (m *Mutable) SetMutableConfig(c MutableConfig) error {
+	if err := validateMutableConfig(&c); err != nil {
 		return err
 	}
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	m.c.Auth = c
+	if err := writeMutableConfig(m.path, &c); err != nil {
+		return fmt.Errorf("saving modified config: %w", err)
+	}
+
+	m.c = c
 	return nil
 }
 
@@ -105,7 +112,7 @@ func (m *Mutable) loadFromFile(generate bool) error {
 	defer m.mu.Unlock()
 
 	mcfg, err := readMutableConfig(m.path)
-	if os.IsNotExist(err) && generate {
+	if errors.Is(err, fs.ErrNotExist) && generate {
 		// Try creating a default config file with a generated service token
 		mcfg, err = generateMutableConfig(m.path)
 		if err != nil {
@@ -140,21 +147,21 @@ func (m *Mutable) rebuildInternal() {
 	m.pigeonMap = pigeonMap
 }
 
-func readMutableConfig(path string) (mutableConfig, error) {
+func readMutableConfig(path string) (MutableConfig, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return mutableConfig{}, fmt.Errorf("reading config file contents: %w", err)
+		return MutableConfig{}, fmt.Errorf("reading config file contents: %w", err)
 	}
 
-	var newCfg mutableConfig
+	var newCfg MutableConfig
 	if err := yaml.Unmarshal(data, &newCfg); err != nil {
-		return mutableConfig{}, fmt.Errorf("unmarshaling config file as YAML: %w", err)
+		return MutableConfig{}, fmt.Errorf("unmarshaling config file as YAML: %w", err)
 	}
 
 	return newCfg, nil
 }
 
-func writeMutableConfig(path string, c *mutableConfig) error {
+func writeMutableConfig(path string, c *MutableConfig) error {
 	data, err := yaml.Marshal(&c)
 	if err != nil {
 		return fmt.Errorf("marshaling config: %w", err)
@@ -167,15 +174,15 @@ func writeMutableConfig(path string, c *mutableConfig) error {
 	return nil
 }
 
-func generateMutableConfig(path string) (mutableConfig, error) {
+func generateMutableConfig(path string) (MutableConfig, error) {
 	serviceTokenBytes := make([]byte, defaultServiceTokenLength)
 	if _, err := rand.Read(serviceTokenBytes); err != nil {
-		return mutableConfig{}, fmt.Errorf("generating service token: %w", err)
+		return MutableConfig{}, fmt.Errorf("generating service token: %w", err)
 	}
 
-	c := mutableConfig{Auth: AuthConfig{ServiceToken: hex.EncodeToString(serviceTokenBytes)}}
+	c := MutableConfig{Auth: AuthConfig{ServiceToken: hex.EncodeToString(serviceTokenBytes)}}
 	if err := writeMutableConfig(path, &c); err != nil {
-		return mutableConfig{}, fmt.Errorf("saving generated config: %w", err)
+		return MutableConfig{}, fmt.Errorf("saving generated config: %w", err)
 	}
 
 	return c, nil

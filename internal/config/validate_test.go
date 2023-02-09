@@ -99,3 +99,45 @@ func Test_ValidateAuthConfig(t *testing.T) {
 		})
 	}
 }
+
+func Test_ValidationError_Error(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		err           error
+		expectMessage string
+	}{
+		{
+			name:          "empty user details",
+			err:           errEmptyUserDetails,
+			expectMessage: "validating auth config: usernames and password hashes must not be empty",
+		},
+		{
+			name:          "invalid password hash",
+			err:           errInvalidPasswordHash,
+			expectMessage: "validating auth config: password hashes must be valid bcrypt hashes",
+		},
+		{
+			name:          "empty pigeon details",
+			err:           errEmptyPigeonDetails,
+			expectMessage: "validating auth config: pigeon names and tokens must not be empty",
+		},
+		{
+			name:          "empty service token",
+			err:           errEmptyServiceToken,
+			expectMessage: "validating auth config: service token must not be empty",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			gotMessage := tt.err.Error()
+
+			assert.Equal(t, tt.expectMessage, gotMessage)
+		})
+	}
+}

@@ -52,6 +52,6 @@ func validateAuthConfig(c *AuthConfig) error {
 	return nil
 }
 
-func validateMutableConfig(c *mutableConfig) error {
+func validateMutableConfig(c *MutableConfig) error {
 	return validateAuthConfig(&c.Auth)
 }

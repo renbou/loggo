@@ -1,0 +1,5 @@
+auth:
+  users:
+    - username: username
+      password: bad hash
+  service_token: xxxx-yyyy-zzzz
