@@ -21,40 +21,36 @@ func Test_ConsumerSink_Write(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		consumer  LogConsumer
-		chunks    []string
-		assertion assert.ErrorAssertionFunc
+		name     string
+		consumer LogConsumer
+		chunks   []string
+		wantErr  bool
 	}{
 		{
-			name:      "single chunk",
-			consumer:  assertingConsumer(t, "message", nil),
-			chunks:    []string{"message\n"},
-			assertion: assert.NoError,
+			name:     "single chunk",
+			consumer: assertingConsumer(t, "message", nil),
+			chunks:   []string{"message\n"},
 		},
 		{
-			name:      "multiple chunks",
-			consumer:  assertingConsumer(t, "split message", nil),
-			chunks:    []string{"split ", "message\n"},
-			assertion: assert.NoError,
+			name:     "multiple chunks",
+			consumer: assertingConsumer(t, "split message", nil),
+			chunks:   []string{"split ", "message\n"},
 		},
 		{
-			name:      "trailing data",
-			consumer:  assertingConsumer(t, "no trailing", nil),
-			chunks:    []string{"no trailing", "\ndata"},
-			assertion: assert.NoError,
+			name:     "trailing data",
+			consumer: assertingConsumer(t, "no trailing", nil),
+			chunks:   []string{"no trailing", "\ndata"},
 		},
 		{
-			name:      "error during send",
-			consumer:  assertingConsumer(t, "failed message", assert.AnError),
-			chunks:    []string{"failed message\n"},
-			assertion: assert.Error,
+			name:     "error during send",
+			consumer: assertingConsumer(t, "failed message", assert.AnError),
+			chunks:   []string{"failed message\n"},
+			wantErr:  true,
 		},
 		{
-			name:      "nil consumer",
-			consumer:  nil,
-			chunks:    []string{"datadata", "more data\n"},
-			assertion: assert.NoError,
+			name:     "nil consumer",
+			consumer: nil,
+			chunks:   []string{"datadata", "more data\n"},
 		},
 	}
 
@@ -69,7 +65,12 @@ func Test_ConsumerSink_Write(t *testing.T) {
 				n, err := sink.Write([]byte(chunk))
 
 				assert.Equal(t, len(chunk), n)
-				tt.assertion(t, err)
+
+				if tt.wantErr {
+					assert.Error(t, err)
+				} else {
+					assert.NoError(t, err)
+				}
 			}
 		})
 	}
@@ -79,28 +80,26 @@ func Test_ConsumerSink_Sync(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		consumer  LogConsumer
-		chunks    []string
-		assertion assert.ErrorAssertionFunc
+		name     string
+		consumer LogConsumer
+		chunks   []string
+		wantErr  bool
 	}{
 		{
-			name:      "leftover data",
-			consumer:  assertingConsumer(t, "during sync", nil),
-			chunks:    []string{"during sync"},
-			assertion: assert.NoError,
+			name:     "leftover data",
+			consumer: assertingConsumer(t, "during sync", nil),
+			chunks:   []string{"during sync"},
 		},
 		{
-			name:      "no leftover data",
-			consumer:  assertingConsumer(t, "all data already sent", nil),
-			chunks:    []string{"all", " data", " already sent\n"},
-			assertion: assert.NoError,
+			name:     "no leftover data",
+			consumer: assertingConsumer(t, "all data already sent", nil),
+			chunks:   []string{"all", " data", " already sent\n"},
 		},
 		{
-			name:      "error during send",
-			consumer:  assertingConsumer(t, "unsynced", assert.AnError),
-			chunks:    []string{"un", "synced"},
-			assertion: assert.Error,
+			name:     "error during send",
+			consumer: assertingConsumer(t, "unsynced", assert.AnError),
+			chunks:   []string{"un", "synced"},
+			wantErr:  true,
 		},
 	}
 
@@ -118,7 +117,13 @@ func Test_ConsumerSink_Sync(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			tt.assertion(t, sink.Sync())
+			err := sink.Sync()
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
