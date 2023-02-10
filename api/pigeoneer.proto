@@ -3,6 +3,14 @@ syntax = "proto3";
 package loggo.api.pigeoneer;
 option go_package = "github.com/renbou/loggo/pkg/api/pigeoneer";
 
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
 service Pigeoneer {
-  rpc SendMessages(stream )
+  rpc Dispatch(stream DispatchRequest) returns (google.protobuf.Empty);
+}
+
+message DispatchRequest {
+  google.protobuf.Timestamp timestamp = 1;
+  bytes message = 2;
 }
