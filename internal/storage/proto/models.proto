@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 // :TODO: use vtproto pool for fast unmarshaling 
-package loggo.logs.storage.models;
+package loggo.storage.models;
 option go_package = "github.com/renbou/loggo/internal/storage/models";
 
 // FlatMessage is used for storing unnested log messages so that they can later be searched

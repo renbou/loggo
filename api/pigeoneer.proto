@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package loggo.api.pigeoneer;
+option go_package = "github.com/renbou/loggo/pkg/api/pigeoneer";
+
+service Pigeoneer {
+  rpc SendMessages(stream )
+}
