@@ -63,6 +63,11 @@ func (s *Service) Stop() {
 }
 
 // Dispatch dispatches incoming messages from the stream to the storage.
+// All of the complex synchronization here is needed during the shutdown of the server, allowing pending messages
+// to be persisted to storage, and new ones to not be accepted. If a simple grpcServer.Stop() is used, we might
+// fail to send an "ACK" back to the client, resulting in duplicates.
+// Note: there might still be duplicates if an ACK was failed to be sent,
+// however that should happen only in cases when the actuall network connection has been broken.
 func (s *Service) Dispatch(stream desc.Pigeoneer_DispatchServer) error {
 	serverClosed := status.Error(codes.Unavailable, "pigeoneer stopping")
 	pigeonName := mw.PigeonNameFromCtx(stream.Context())
@@ -93,7 +98,7 @@ func (s *Service) Dispatch(stream desc.Pigeoneer_DispatchServer) error {
 		message, err := request.message, request.err
 		if err != nil {
 			if err == io.EOF || status.Convert(err).Code() == codes.Canceled {
-				return stream.SendAndClose(&emptypb.Empty{})
+				return nil
 			}
 
 			logger.Errorw("unexpected error while receiving new message",
@@ -116,6 +121,14 @@ func (s *Service) Dispatch(stream desc.Pigeoneer_DispatchServer) error {
 		}
 
 		dispatchedLogMessagesTotal.WithLabelValues(pigeonName).Inc()
+
+		if err := stream.Send(&emptypb.Empty{}); err != nil {
+			logger.Errorw("unexpected error while acking written message",
+				"component", "pigeoneer",
+				"error", err,
+			)
+			return status.Error(codes.Internal, "send ack error")
+		}
 	}
 }
 
@@ -128,9 +141,12 @@ func (s *Service) pipeMessages(stream desc.Pigeoneer_DispatchServer) chan dispat
 			message, err := stream.Recv()
 
 			select {
-			// If the done channel is closed, noone will be listening on the channel, and the stream will already be closed
+			// Once the done channel is closed, noone will be listening on the channel, and the stream will already be closed
 			case ch <- dispatchRequestWrapper{message, err}:
-				continue
+				if err == nil {
+					continue
+				}
+				// Error will be handled by Dispatch, we also need to exit to avoid leaking the goroutine
 			case <-s.done:
 			}
 

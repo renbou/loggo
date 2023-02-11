@@ -45,7 +45,7 @@ func (c *pigeoneerClient) Dispatch(ctx context.Context, opts ...grpc.CallOption)
 
 type Pigeoneer_DispatchClient interface {
 	Send(*DispatchRequest) error
-	CloseAndRecv() (*emptypb.Empty, error)
+	Recv() (*emptypb.Empty, error)
 	grpc.ClientStream
 }
 
@@ -57,10 +57,7 @@ func (x *pigeoneerDispatchClient) Send(m *DispatchRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *pigeoneerDispatchClient) CloseAndRecv() (*emptypb.Empty, error) {
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
+func (x *pigeoneerDispatchClient) Recv() (*emptypb.Empty, error) {
 	m := new(emptypb.Empty)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -101,7 +98,7 @@ func _Pigeoneer_Dispatch_Handler(srv interface{}, stream grpc.ServerStream) erro
 }
 
 type Pigeoneer_DispatchServer interface {
-	SendAndClose(*emptypb.Empty) error
+	Send(*emptypb.Empty) error
 	Recv() (*DispatchRequest, error)
 	grpc.ServerStream
 }
@@ -110,7 +107,7 @@ type pigeoneerDispatchServer struct {
 	grpc.ServerStream
 }
 
-func (x *pigeoneerDispatchServer) SendAndClose(m *emptypb.Empty) error {
+func (x *pigeoneerDispatchServer) Send(m *emptypb.Empty) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -133,6 +130,7 @@ var Pigeoneer_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "Dispatch",
 			Handler:       _Pigeoneer_Dispatch_Handler,
+			ServerStreams: true,
 			ClientStreams: true,
 		},
 	},
