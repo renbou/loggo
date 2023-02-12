@@ -101,8 +101,8 @@ func (s *Service) Dispatch(stream pb.Pigeoneer_DispatchServer) error {
 				return nil
 			}
 
-			logger.Errorw("unexpected error while receiving new message",
-				"component", "pigeoneer",
+			logger.Errorw("error while receiving new message",
+				"component", "api.pigeoneer",
 				"error", err,
 			)
 			return status.Error(codes.Internal, "receive error")
@@ -111,8 +111,8 @@ func (s *Service) Dispatch(stream pb.Pigeoneer_DispatchServer) error {
 		// No errors should occur here during normal execution,
 		// since we always stop for this service to finish before closing the storage
 		if err := s.ms.AddMessage(message.Timestamp.AsTime(), message.Message); err != nil {
-			logger.Errorw("failed to add message to storage during dispatch",
-				"component", "pigeoneer",
+			logger.Errorw("error while adding message to storage during dispatch",
+				"component", "api.pigeoneer",
 				"message_timestamp", message.Timestamp.AsTime(),
 				"message_data", message.Message,
 				"error", err,
@@ -123,8 +123,8 @@ func (s *Service) Dispatch(stream pb.Pigeoneer_DispatchServer) error {
 		dispatchedLogMessagesTotal.WithLabelValues(pigeonName).Inc()
 
 		if err := stream.Send(&emptypb.Empty{}); err != nil {
-			logger.Errorw("unexpected error while acking written message",
-				"component", "pigeoneer",
+			logger.Errorw("error while acking written message",
+				"component", "api.pigeoneer",
 				"error", err,
 			)
 			return status.Error(codes.Internal, "send ack error")

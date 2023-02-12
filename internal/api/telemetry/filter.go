@@ -9,6 +9,11 @@ import (
 
 // compileFilter recursively builds the whole filter into functions which avoid extra allocations and parsing.
 func compileFilter(rawFilter *pb.LogFilter) storage.Filter {
+	if rawFilter == nil {
+		// Nil filter is properly recognized by the storage
+		return nil
+	}
+
 	switch f := rawFilter.Filter.(type) {
 	case *pb.LogFilter_Text_:
 		return compileTextFilter(f.Text)
@@ -21,8 +26,6 @@ func compileFilter(rawFilter *pb.LogFilter) storage.Filter {
 	case *pb.LogFilter_Not_:
 		return compileNotFilter(f.Not)
 	}
-
-	// Nil filter is properly recognized by the storage
 	return nil
 }
 

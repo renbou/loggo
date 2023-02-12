@@ -160,7 +160,7 @@ func (b *Badger) ListMessages(from, to time.Time, filter Filter, after []byte, l
 // timestamp. Like ListMessages, a Batch is returned consisting of the latest messages after "from",
 // meaning that, if there are lots of such messages, only a small part is returned in the Batch
 // and its Next field is set, which can then be used with ListMessages like usual.
-// New messages that arive after the batch are passed through the returned channel until the passed context is done.
+// New messages that arrive after the batch are passed through the returned channel until the passed context is done.
 func (b *Badger) StreamMessages(ctx context.Context, from time.Time, filter Filter, limit uint,
 ) (Batch, chan Message, error) {
 	batch, err := b.ListMessages(from, time.Now(), filter, nil, limit)
