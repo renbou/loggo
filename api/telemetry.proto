@@ -14,7 +14,7 @@ service Telemetry {
 message ListLogMessagesRequest {
   google.protobuf.Timestamp from = 1;
   google.protobuf.Timestamp to = 2;
-  LogFilter filter = 3;
+  optional LogFilter filter = 3;
 
   int32 page_size = 4;
   string page_token = 5;
@@ -26,7 +26,7 @@ message ListLogMessagesResponse {
 
 message StreamLogMessagesRequest {
   google.protobuf.Timestamp from = 1;
-  LogFilter filter = 2;
+  optional LogFilter filter = 2;
 
   int32 page_size = 3;
 }

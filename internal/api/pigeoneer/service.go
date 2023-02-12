@@ -10,7 +10,7 @@ import (
 	"github.com/renbou/loggo/internal/logger"
 	"github.com/renbou/loggo/internal/mw"
 	"github.com/renbou/loggo/internal/storage"
-	desc "github.com/renbou/loggo/pkg/api/pigeoneer"
+	pb "github.com/renbou/loggo/pkg/api/pigeoneer"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -28,13 +28,13 @@ type messageStore interface {
 }
 
 type dispatchRequestWrapper struct {
-	message *desc.DispatchRequest
+	message *pb.DispatchRequest
 	err     error
 }
 
 // Service is the pigeoneer service providing dispatch functionality for log messages via pigeons.
 type Service struct {
-	desc.UnimplementedPigeoneerServer
+	pb.UnimplementedPigeoneerServer
 	ms messageStore
 
 	done chan struct{}
@@ -68,7 +68,7 @@ func (s *Service) Stop() {
 // fail to send an "ACK" back to the client, resulting in duplicates.
 // Note: there might still be duplicates if an ACK was failed to be sent,
 // however that should happen only in cases when the actuall network connection has been broken.
-func (s *Service) Dispatch(stream desc.Pigeoneer_DispatchServer) error {
+func (s *Service) Dispatch(stream pb.Pigeoneer_DispatchServer) error {
 	serverClosed := status.Error(codes.Unavailable, "pigeoneer stopping")
 	pigeonName := mw.PigeonNameFromCtx(stream.Context())
 
@@ -133,7 +133,7 @@ func (s *Service) Dispatch(stream desc.Pigeoneer_DispatchServer) error {
 }
 
 // pipeMessages runs in a separate goroutine so that Dispatch is never blocked during Recv
-func (s *Service) pipeMessages(stream desc.Pigeoneer_DispatchServer) chan dispatchRequestWrapper {
+func (s *Service) pipeMessages(stream pb.Pigeoneer_DispatchServer) chan dispatchRequestWrapper {
 	ch := make(chan dispatchRequestWrapper)
 
 	go func() {

@@ -12,7 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/renbou/loggo/internal/storage"
-	desc "github.com/renbou/loggo/pkg/api/pigeoneer"
+	pb "github.com/renbou/loggo/pkg/api/pigeoneer"
 	"github.com/renbou/loggo/pkg/evictch"
 )
 
@@ -27,8 +27,8 @@ const (
 
 // Client provides an API to access the pigeoneer service with automatic buffering of messages and retries.
 type Client struct {
-	grpc      desc.PigeoneerClient
-	queue     *evictch.Chan[*desc.DispatchRequest]
+	grpc      pb.PigeoneerClient
+	queue     *evictch.Chan[*pb.DispatchRequest]
 	jitterRnd *rand.Rand
 
 	wg     sync.WaitGroup
@@ -40,8 +40,8 @@ type Client struct {
 // Actual dispatch of messages will happen in a background goroutine with automatic reconnects and retries.
 func NewClient(cc grpc.ClientConnInterface, bufferCapacity uint) *Client {
 	client := &Client{
-		grpc:      desc.NewPigeoneerClient(cc),
-		queue:     evictch.NewChan[*desc.DispatchRequest](bufferCapacity),
+		grpc:      pb.NewPigeoneerClient(cc),
+		queue:     evictch.NewChan[*pb.DispatchRequest](bufferCapacity),
 		jitterRnd: rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 
@@ -63,7 +63,7 @@ func (c *Client) Stop() {
 
 // Dispatch adds a new request to the dispatch queue, performing the actual dispatch in the background runner.
 func (c *Client) Dispatch(t time.Time, m storage.Message) {
-	c.queue.Write(&desc.DispatchRequest{Timestamp: timestamppb.New(t), Message: m})
+	c.queue.Write(&pb.DispatchRequest{Timestamp: timestamppb.New(t), Message: m})
 }
 
 func (c *Client) runDispatches(ctx context.Context) {
@@ -76,7 +76,7 @@ func (c *Client) runDispatches(ctx context.Context) {
 		}
 	}()
 
-	var request *desc.DispatchRequest
+	var request *pb.DispatchRequest
 	for {
 		// Stream might be nil even on the first iteration if the context is canceled before we managed to connect
 		if stream == nil {
@@ -117,7 +117,7 @@ func (c *Client) runDispatches(ctx context.Context) {
 
 // connect connects to the service using retries with backoff
 // :TODO: maybe this needs logging? but in debug mode, for example...
-func (c *Client) connect(ctx context.Context) desc.Pigeoneer_DispatchClient {
+func (c *Client) connect(ctx context.Context) pb.Pigeoneer_DispatchClient {
 	stream, err := c.grpc.Dispatch(ctx)
 
 	var wait time.Duration

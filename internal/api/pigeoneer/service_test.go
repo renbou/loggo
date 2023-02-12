@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/renbou/loggo/internal/storage"
-	desc "github.com/renbou/loggo/pkg/api/pigeoneer"
+	pb "github.com/renbou/loggo/pkg/api/pigeoneer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -87,7 +87,7 @@ func (l *multiBufconnListener) finalClose() error {
 
 func setupTestServer(wg *sync.WaitGroup, listener net.Listener, service *Service) *grpc.Server {
 	server := grpc.NewServer()
-	desc.RegisterPigeoneerServer(server, service)
+	pb.RegisterPigeoneerServer(server, service)
 
 	wg.Add(1)
 	go func() {
@@ -110,7 +110,7 @@ func setupTestService(wg *sync.WaitGroup) (*messageStoreMock, *Service, *multiBu
 }
 
 func setupTestClient(ctx context.Context, t *testing.T, listener *multiBufconnListener) (
-	*grpc.ClientConn, desc.PigeoneerClient,
+	*grpc.ClientConn, pb.PigeoneerClient,
 ) {
 	t.Helper()
 
@@ -123,7 +123,7 @@ func setupTestClient(ctx context.Context, t *testing.T, listener *multiBufconnLi
 
 	require.NoError(t, err)
 
-	return conn, desc.NewPigeoneerClient(conn)
+	return conn, pb.NewPigeoneerClient(conn)
 }
 
 func Test_Service_Dispatch_ClientStop(t *testing.T) {
@@ -145,7 +145,7 @@ func Test_Service_Dispatch_ClientStop(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, message := range testMessages {
-		err := dispatchClient.Send(&desc.DispatchRequest{
+		err := dispatchClient.Send(&pb.DispatchRequest{
 			Timestamp: timestamppb.Now(),
 			Message:   message,
 		})
@@ -188,7 +188,7 @@ func Test_Service_Dispatch_ClientCancel(t *testing.T) {
 	require.NoError(t, err)
 
 	message := testMessages[0]
-	err = dispatchClient.Send(&desc.DispatchRequest{
+	err = dispatchClient.Send(&pb.DispatchRequest{
 		Timestamp: timestamppb.Now(),
 		Message:   message,
 	})
@@ -257,7 +257,7 @@ func Test_Service_Dispatch_StopDuringStream(t *testing.T) {
 	dispatchClient, err := client.Dispatch(ctx)
 	require.NoError(t, err)
 
-	request := &desc.DispatchRequest{
+	request := &pb.DispatchRequest{
 		Timestamp: timestamppb.Now(),
 		Message:   testMessages[0],
 	}
