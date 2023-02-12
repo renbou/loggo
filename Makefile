@@ -32,7 +32,7 @@ PROTOC_GRPC = PROTO_ARGS="\
 .generate-storage-proto:
 	$(PROTOC)
 
-.generate-api-proto: PROTO_PATH=api/pigeoneer.proto
+.generate-api-proto: PROTO_PATH=api/pigeoneer.proto api/telemetry.proto
 .generate-api-proto:
 	$(PROTOC_GRPC)
 

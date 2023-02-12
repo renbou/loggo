@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package loggo.api.telemetry;
+option go_package = "github.com/renbou/loggo/pkg/api/telemetry";
+
+import "google/protobuf/timestamp.proto";
+
+// :TODO: add comments to the API packages once they are semi-finalized
+service Telemetry {
+  rpc ListLogMessages(ListLogMessagesRequest) returns (ListLogMessagesResponse);
+  rpc StreamLogMessages(StreamLogMessagesRequest) returns (stream StreamLogMessagesResponse);
+}
+
+message ListLogMessagesRequest {
+  google.protobuf.Timestamp from = 1;
+  google.protobuf.Timestamp to = 2;
+  LogFilter filter = 3;
+
+  int32 page_size = 4;
+  string page_token = 5;
+}
+
+message ListLogMessagesResponse {
+  LogBatch batch = 1;
+}
+
+message StreamLogMessagesRequest {
+  google.protobuf.Timestamp from = 1;
+  LogFilter filter = 2;
+
+  int32 page_size = 3;
+}
+
+message StreamLogMessagesResponse {
+  oneof response {
+    LogBatch batch = 1;
+    bytes message = 2;
+  }
+}
+
+message LogBatch {
+  repeated bytes messages = 1;
+  string next_page_token = 2;
+}
+
+message LogFilter {
+  message Text {
+    string value = 1;
+  }
+
+  message Scoped {
+    string field = 1;
+    string value = 2;
+  }
+
+  message And {
+    LogFilter a = 1;
+    LogFilter b = 2;
+  }
+
+  message Or {
+    LogFilter a = 1;
+    LogFilter b = 2;
+  }
+
+  message Not {
+    LogFilter a = 1;
+  }
+
+  oneof filter {
+    Text text = 1;
+    Scoped scoped = 2;
+    And and = 3;
+    Or or = 4;
+    Not not = 5;
+  }
+}
