@@ -1,33 +1,47 @@
-import { useState } from "react";
-import "./App.css";
-import { parseFilter } from "@/lib/filters/filters";
+import Navbar from "./components/Navbar";
+import LogList from "./components/LogList";
+import { parseFilter } from "./lib/filters";
+import { useMemo, useRef, useState } from "react";
+import * as api from "./lib/api/telemetry";
+
+type searchError = {
+  title: string;
+  info: string;
+};
 
 function App() {
-  const [text, setText] = useState("");
-  const [parsed, setParsed] = useState({});
+  // apiClient is created only once
+  const apiClient = useMemo(() => new api.Client(), []);
 
-  function changed(e: React.ChangeEvent<HTMLInputElement>) {
-    setText(e.target.value);
-    const parsed = parseFilter(e.target.value);
-    setParsed(parsed);
+  const [searchError, setSearchError] = useState<searchError>();
+  const [logMessages, setLogMessages] = useState<string[]>();
+
+  // TODO: add support for streaming logs
+  async function runSearch(search: string, from: Date, to: Date) {
+    const result = parseFilter(search);
+    if (result.errorMessage) {
+      setSearchError({
+        title: "Failed to parse search query",
+        info: result.errorMessage,
+      });
+      return;
+    }
+
+    const logBatch = await apiClient.listLogMessages(
+      from,
+      to,
+      result.filter,
+      ""
+    );
+
+    setSearchError(undefined);
+    setLogMessages(logBatch.messages);
   }
 
   return (
-    <div className="App">
-      <div>
-        <a href="https://vitejs.dev" target="_blank"></a>
-        <a href="https://reactjs.org" target="_blank"></a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <input type="text" value={text} onChange={changed} />
-        <p>
-          <code>{JSON.stringify(parsed)}</code>
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+    <div className="flex flex-col h-screen">
+      <Navbar onSearch={runSearch}></Navbar>
+      <LogList messages={logMessages || []} error={searchError}></LogList>
     </div>
   );
 }

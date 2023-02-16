@@ -1,32 +1,18 @@
 CURDIR := $(shell pwd)
 BINDIR ?= ${CURDIR}/.bin
 
-PROTOC_GEN_GO_V = v1.28.1
-PROTOC_GEN_GO_GRPC_V = v1.2.0
-
-# Tooling and dependencies
-INSTALL_TOOL = test -f ${BINDIR}/`echo ${TOOLURL} | perl -ne 'if (/[\w.\/-]+\/([\w-]+)@latest/) { print $$1; exit }'` || \
-	GOBIN=${BINDIR} go install ${TOOLURL}
-
+# Tooling
 .bindir:
 	test -d ${BINDIR} || mkdir -p ${BINDIR}
 
-.install-protoc-gen-go: TOOLURL=google.golang.org/protobuf/cmd/protoc-gen-go@${PROTOC_GEN_GO_V}
-.install-protoc-gen-go:
-	$(INSTALL_TOOL)
+.install-antlr: .bindir
+	test -f ${BINDIR}/antlr.jar || curl "https://www.antlr.org/download/antlr-4.11.1-complete.jar" -o ${BINDIR}/antlr.jar
 
-.install-protoc-gen-go-grpc: TOOLURL=google.golang.org/grpc/cmd/protoc-gen-go-grpc@${PROTOC_GEN_GO_GRPC_V}
-.install-protoc-gen-go-grpc:
-	$(INSTALL_TOOL)
-
-deps: .install-protoc-gen-go .install-protoc-gen-go-grpc
+tools: .install-antlr
 
 # Proto generation
-PROTOC = protoc --plugin=${BINDIR}/protoc-gen-go \
-	--go_opt=module=github.com/renbou/loggo --go_out=. $$PROTO_ARGS ${PROTO_PATH}
-PROTOC_GRPC = PROTO_ARGS="\
-	--plugin=${BINDIR}/protoc-gen-go-grpc \
-	--go-grpc_opt=module=github.com/renbou/loggo --go-grpc_out=."; ${PROTOC}
+PROTOC = protoc --go_opt=module=github.com/renbou/loggo --go_out=. $$PROTO_ARGS ${PROTO_PATH}
+PROTOC_GRPC = PROTO_ARGS="--go-grpc_opt=module=github.com/renbou/loggo --go-grpc_out=."; ${PROTOC}
 
 .generate-storage-proto: PROTO_PATH=internal/storage/proto/models.proto
 .generate-storage-proto:
@@ -36,7 +22,16 @@ PROTOC_GRPC = PROTO_ARGS="\
 .generate-api-proto:
 	$(PROTOC_GRPC)
 
-generate: .generate-storage-proto .generate-api-proto
+.generate-web-proto:
+	cd front && npm run generate
+
+.generate-filter-parser:
+	java -Xmx500M -cp "${BINDIR}/antlr.jar:$$CLASSPATH" org.antlr.v4.Tool \
+	  -Dlanguage=JavaScript -no-listener \
+	  front/src/lib/filters/Filters.g4; \
+	rm -f front/src/lib/filters/*.interp front/src/lib/filters/*.tokens
+	
+generate: .generate-storage-proto .generate-api-proto .generate-web-proto .generate-filter-parser
 
 # Testing
 COVER_FILE := $(shell mktemp)
