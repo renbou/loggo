@@ -54,3 +54,11 @@ cover:
 		go tool cover -func ${COVER_FILE} -o ${COVER_FUNC_REPORT}; \
 	fi
 	rm -f ${COVER_TMP_FILE} ${COVER_FILE}
+
+# Building
+.build-front:
+	cd front && npm run build
+
+build: .bindir .build-front
+	\cp -r front/dist internal/web && \
+	CGO_ENABLED=0 ${BUILD_FLAGS} go build -o ${BINDIR}/loggo ./cmd/loggo

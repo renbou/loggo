@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -10,11 +13,14 @@ import (
 	"time"
 
 	"github.com/dgraph-io/badger/v3"
+	"github.com/gin-gonic/gin"
+	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/renbou/loggo/internal/api/pigeoneer"
 	"github.com/renbou/loggo/internal/api/telemetry"
 	"github.com/renbou/loggo/internal/config"
 	"github.com/renbou/loggo/internal/logger"
 	"github.com/renbou/loggo/internal/storage"
+	"github.com/renbou/loggo/internal/web"
 	pigeoneerPb "github.com/renbou/loggo/pkg/api/pigeoneer"
 	telemetryPb "github.com/renbou/loggo/pkg/api/telemetry"
 	"github.com/spf13/cobra"
@@ -76,16 +82,20 @@ func runHQ(immutable *config.Immutable, mutable *config.Mutable) error {
 		return err
 	}
 
+	// Register telemetry service first to be served over grpc-web
+	telemetryService := telemetry.NewService(db)
+	telemetryPb.RegisterTelemetryServer(grpcServer, telemetryService)
+
+	// Need to setup the grpc-web server now to avoid any of the over gRPC services being served over grpc-web
+	httpServer := setupHTTP(immutable.Web.Addr, grpcServer)
+
 	// Pigeoneer service works over pure gRPC
 	pigeoneerService := pigeoneer.NewService(db)
 	pigeoneerPb.RegisterPigeoneerServer(grpcServer, pigeoneerService)
 
-	// While the telemetry service works over gRPC-web for user access from the frontend
-	telemetryService := telemetry.NewService(db)
-	telemetryPb.RegisterTelemetryServer(grpcServer, telemetryService)
-
-	// If an error arrives on this channel, we will need to shut down the whole program
+	// If an error arrives on these channels, we will need to shut down the whole program
 	grpcCh := startGRPCServer(grpcServer, grpcListener)
+	httpCh := startHTTPServer(httpServer)
 
 	logger.Infow("all components initialized and started",
 		"config_file", hqFlags.configPath,
@@ -101,6 +111,8 @@ func runHQ(immutable *config.Immutable, mutable *config.Mutable) error {
 	case err := <-grpcCh:
 		// Perform an emergency shutdown
 		logger.Errorw("critical error while serving gRPC, will perform shutdown", "error", err)
+	case err := <-httpCh:
+		logger.Errorw("critical error while serving HTTP, will perform shutdown", "error", err)
 	case <-exitCh:
 		// Perform a normal shutdown
 		logger.Infow("gracefully shutting down all components")
@@ -112,6 +124,16 @@ func runHQ(immutable *config.Immutable, mutable *config.Mutable) error {
 	go func() {
 		defer shutdownWg.Done()
 		grpcServer.GracefulStop()
+	}()
+
+	shutdownWg.Add(1)
+	go func() {
+		defer shutdownWg.Done()
+
+		ctx, cancel := context.WithTimeout(context.Background(), gracefulStopTimeout)
+		defer cancel()
+
+		_ = httpServer.Shutdown(ctx)
 	}()
 
 	shutdownDone := make(chan struct{})
@@ -130,6 +152,7 @@ func runHQ(immutable *config.Immutable, mutable *config.Mutable) error {
 	grpcServer.Stop()
 
 	<-grpcCh
+	<-httpCh
 	<-shutdownDone
 
 	return nil
@@ -156,10 +179,47 @@ func setupGRPC(addr string) (*grpc.Server, net.Listener, error) {
 	return server, listener, nil
 }
 
+func setupHTTP(addr string, grpcServer *grpc.Server) *http.Server {
+	gin.SetMode(gin.ReleaseMode)
+	engine := gin.New()
+
+	// Register all POST grpc-web resources. Avoid doing this using a middleware so
+	// that only the telemetry API methods are available.
+	grpcWeb := grpcweb.WrapServer(grpcServer)
+	for _, route := range grpcweb.ListGRPCResources(grpcServer) {
+		engine.POST(route, gin.WrapH(grpcWeb))
+	}
+
+	// All static content, including index.html and JS/CSS
+	engine.StaticFS("/", web.Content)
+
+	server := &http.Server{
+		Addr:        addr,
+		Handler:     engine,
+		ReadTimeout: 5 * time.Second,
+		IdleTimeout: 2 * time.Minute,
+	}
+	return server
+}
+
 func startGRPCServer(server *grpc.Server, listener net.Listener) chan error {
 	ch := make(chan error)
 	go func() {
 		ch <- server.Serve(listener)
+		close(ch)
+	}()
+
+	return ch
+}
+
+func startHTTPServer(server *http.Server) chan error {
+	ch := make(chan error)
+	go func() {
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			ch <- err
+		} else {
+			ch <- nil
+		}
 		close(ch)
 	}()
 
