@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"bytes"
+	"strings"
 
 	"github.com/renbou/loggo/internal/storage"
 	pb "github.com/renbou/loggo/pkg/api/telemetry"
@@ -39,7 +40,7 @@ func compileTextFilter(textFilter *pb.LogFilter_Text) storage.Filter {
 func compileScopedFilter(scopedFilter *pb.LogFilter_Scoped) storage.Filter {
 	return func(_ storage.Message, fm storage.FlatMapping) bool {
 		v, ok := fm(scopedFilter.GetField())
-		return ok && v == scopedFilter.GetValue()
+		return ok && strings.Contains(v, scopedFilter.GetValue())
 	}
 }
 

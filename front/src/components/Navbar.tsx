@@ -43,7 +43,7 @@ function Navbar(props: Props) {
     if (to === undefined) {
       let tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
-      to = new Date();
+      to = tomorrow;
     }
 
     dateRangePicker.current.setDates(from, to);

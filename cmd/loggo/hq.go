@@ -52,10 +52,10 @@ var hqCmd = &cobra.Command{
 }
 
 func init() {
-	hqCmd.LocalFlags().StringVarP(&hqFlags.configPath, "config", "c", "loggo.yaml", "Loggo configuration file path")
-	hqCmd.LocalFlags().StringVar(&hqFlags.storagePath, "storage.path", "data/", "Base directory path for log storage (BadgerDB)")
-	hqCmd.LocalFlags().StringVar(&hqFlags.grpcAddr, "grpc.addr", ":20081", "Listen address for the gRPC server")
-	hqCmd.LocalFlags().StringVar(&hqFlags.webAddr, "web.addr", ":20080", "Listen address for the Web (HTTP) server")
+	hqCmd.Flags().StringVarP(&hqFlags.configPath, "config", "c", "loggo.yaml", "Loggo configuration file path")
+	hqCmd.Flags().StringVar(&hqFlags.storagePath, "storage.path", "data/", "Base directory path for log storage (BadgerDB)")
+	hqCmd.Flags().StringVar(&hqFlags.grpcAddr, "grpc.addr", ":20081", "Listen address for the gRPC server")
+	hqCmd.Flags().StringVar(&hqFlags.webAddr, "web.addr", ":20080", "Listen address for the Web (HTTP) server")
 
 	rootCmd.AddCommand(hqCmd)
 }
@@ -142,13 +142,15 @@ func runHQ(immutable *config.Immutable, mutable *config.Mutable) error {
 		close(shutdownDone)
 	}()
 
+	// Signal the shutdown to the service, so that all active streams are gracefully ended.
+	pigeoneerService.Stop()
+
 	select {
 	case <-shutdownDone:
 	case <-time.After(gracefulStopTimeout):
 	}
 
-	// Now, actually force the shutdowns
-	pigeoneerService.Stop()
+	// Now, actually force the shutdown
 	grpcServer.Stop()
 
 	<-grpcCh
