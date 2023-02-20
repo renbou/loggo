@@ -1,7 +1,7 @@
 import Navbar from "./components/Navbar";
 import LogList from "./components/LogList";
 import { parseFilter } from "./lib/filters";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import * as api from "./lib/api/telemetry";
 
 type searchError = {

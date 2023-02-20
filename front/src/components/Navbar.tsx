@@ -41,6 +41,8 @@ function Navbar(props: Props) {
 
     // TODO: remove once realtime log streaming is supported
     if (to === undefined) {
+      let tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
       to = new Date();
     }
 

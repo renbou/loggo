@@ -67,7 +67,9 @@ function traverse(ctx: FiltersParser.ExpressionContext): LogFilter {
           oneofKind: "scoped",
           scoped: {
             field: ctx.getChild<antlr4.tree.TerminalNode>(0)!.getText(),
-            value: ctx.getChild<antlr4.tree.TerminalNode>(2)!.getText(),
+            value: JSON.parse(
+              ctx.getChild<antlr4.tree.TerminalNode>(2)!.getText()
+            ),
           },
         },
       };
