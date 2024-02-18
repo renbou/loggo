@@ -132,8 +132,8 @@ func (c *Client) connect(ctx context.Context) pb.Pigeoneer_DispatchClient {
 	return stream
 }
 
-func (c *Client) nextConnectWait(prev time.Duration) (wait, next time.Duration) {
-	next = prev * backoffExp
+func (c *Client) nextConnectWait(init time.Duration) (wait, next time.Duration) {
+	next = init * backoffExp
 	if next > backoffMax {
 		next = backoffMax
 	}
@@ -142,7 +142,7 @@ func (c *Client) nextConnectWait(prev time.Duration) (wait, next time.Duration) 
 	jitter := c.jitterRnd.Float64()*2 - 1
 	jitter *= jitterCoef
 
-	wait = prev + time.Duration(float64(prev)*jitter)
+	wait = init + time.Duration(float64(init)*jitter)
 	return wait, next
 }
 
