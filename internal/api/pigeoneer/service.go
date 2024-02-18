@@ -76,8 +76,8 @@ func (s *Service) Dispatch(stream pb.Pigeoneer_DispatchServer) error {
 	// Otherwise, this will successfully add a new active stream to be handled by Stop
 	s.mu.RLock()
 	s.wg.Add(1)
-	defer s.wg.Done()
 	s.mu.RUnlock()
+	defer s.wg.Done()
 
 	// Check this before actually adding to the WaitGroup. If this check isn't made, then we might get a message
 	// first, instead of the s.done signal, since the order in select isn't defined when multiple channels are ready.
