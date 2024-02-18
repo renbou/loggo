@@ -93,12 +93,15 @@ func (s *Service) StreamLogMessages(req *pb.StreamLogMessagesRequest, stream pb.
 
 func (s *Service) batchToPB(batch storage.Batch) *pb.LogBatch {
 	pbBatch := &pb.LogBatch{
-		Messages:      make([][]byte, 0, len(batch.Messages)),
+		Messages:      make([]*pb.LogMessage, 0, len(batch.Messages)),
 		NextPageToken: pagination.EncodePageToken(batch.Next),
 	}
 
 	for _, message := range batch.Messages {
-		pbBatch.Messages = append(pbBatch.Messages, message)
+		pbBatch.Messages = append(pbBatch.Messages, &pb.LogMessage{
+			Message: message.M,
+			Id:      message.ID,
+		})
 	}
 	return pbBatch
 }

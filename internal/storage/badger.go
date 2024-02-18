@@ -138,7 +138,10 @@ func (b *Badger) ListMessages(from, to time.Time, filter Filter, after []byte, l
 
 				// Only append the message if it actually passes any filtering.
 				if filter == nil || filter(message, flatMessageToMapping(flat)) {
-					batch.Messages = append(batch.Messages, message)
+					batch.Messages = append(batch.Messages, StoredMessage{
+						M:  message,
+						ID: item.KeyCopy(nil),
+					})
 				}
 				return nil
 			})

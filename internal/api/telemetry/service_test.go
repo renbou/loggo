@@ -36,11 +36,11 @@ func Test_Service_ListLogMessages_Works(t *testing.T) {
 		assert.Equal(t, after, gotAfter)
 		assert.EqualValues(t, limit, gotLimit)
 		assert.True(t, filter(message, fm))
-		return storage.Batch{Messages: []storage.Message{message}, Next: []byte("test")}, nil
+		return storage.Batch{Messages: []storage.StoredMessage{{M: message, ID: nil}}, Next: []byte("test")}, nil
 	})
 
 	expectResp := &pb.ListLogMessagesResponse{
-		Batch: &pb.LogBatch{Messages: [][]byte{message}, NextPageToken: "dGVzdA"},
+		Batch: &pb.LogBatch{Messages: []*pb.LogMessage{{Message: message, Id: nil}}, NextPageToken: "dGVzdA"},
 	}
 
 	gotResp, err := service.ListLogMessages(context.Background(), &pb.ListLogMessagesRequest{
@@ -97,7 +97,7 @@ func Test_Service_StreamLogMessages_Works(t *testing.T) {
 		ch <- messages[1]
 		close(ch)
 
-		return storage.Batch{Messages: []storage.Message{messages[0]}}, ch, nil
+		return storage.Batch{Messages: []storage.StoredMessage{{M: messages[0], ID: nil}}}, ch, nil
 	})
 
 	var sentN int
@@ -107,7 +107,7 @@ func Test_Service_StreamLogMessages_Works(t *testing.T) {
 			// First response must always be a batch
 			batch, ok := sp1.Response.(*pb.StreamLogMessagesResponse_Batch)
 			assert.True(t, ok)
-			assert.Equal(t, [][]byte{messages[0]}, batch.Batch.Messages)
+			assert.Equal(t, []*pb.LogMessage{{Message: messages[0], Id: nil}}, batch.Batch.Messages)
 			sentN++
 			return nil
 		}

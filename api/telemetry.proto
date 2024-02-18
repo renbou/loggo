@@ -38,8 +38,13 @@ message StreamLogMessagesResponse {
   }
 }
 
+message LogMessage {
+  bytes message = 1;
+  bytes id = 2;
+}
+
 message LogBatch {
-  repeated bytes messages = 1;
+  repeated LogMessage messages = 1;
   string next_page_token = 2;
 }
 

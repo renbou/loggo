@@ -4,10 +4,22 @@ package storage
 // however it isn't enforced, and non-field searches are still possible.
 type Message []byte
 
+// MessageID is an opaque message identifier.
+// Currently, it is generated as "logs:{timestamp}:{sequence_number}", but this shouldn't be relied on.
+// Overall, message IDs are returned for proper pagination and display on the clientside.
+type MessageID []byte
+
+// StoredMessage describes a previously stored message retrieved from the DB,
+// as a consequence of which, it has a proper identifier.
+type StoredMessage struct {
+	M  Message
+	ID MessageID
+}
+
 // Batch is a paginated batch of messages. Next is nil if there are no more messages to be retrieved,
 // otherwise it is an internal key of the next item to be retrieved.
 type Batch struct {
-	Messages []Message
+	Messages []StoredMessage
 	Next     []byte
 }
 

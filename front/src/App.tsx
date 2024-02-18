@@ -1,8 +1,8 @@
-import Navbar from "./components/Navbar";
-import LogList from "./components/LogList";
-import { parseFilter } from "./lib/filters";
 import { useMemo, useState } from "react";
+import LogList from "./components/LogList";
+import Navbar from "./components/Navbar";
 import * as api from "./lib/api/telemetry";
+import { parseFilter } from "./lib/filters";
 
 type searchError = {
   title: string;
@@ -14,7 +14,7 @@ function App() {
   const apiClient = useMemo(() => new api.Client(), []);
 
   const [searchError, setSearchError] = useState<searchError>();
-  const [logMessages, setLogMessages] = useState<string[]>();
+  const [logMessages, setLogMessages] = useState<api.LogMessage[]>();
 
   // TODO: add support for streaming logs
   async function runSearch(search: string, from: Date, to: Date) {

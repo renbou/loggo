@@ -100,9 +100,12 @@ func Test_Badger_ListMessages(t *testing.T) {
 		{Message(`{"e": "f"}`), exampleTime(5)},
 	}
 
-	for _, data := range add {
+	var stored []StoredMessage
+
+	for i, data := range add {
 		err := b.AddMessage(data.t, data.m)
 		require.NoError(t, err)
+		stored = append(stored, StoredMessage{M: data.m, ID: messageKey(data.t, uint64(i))})
 	}
 
 	// Run different batch listing tests
@@ -120,7 +123,7 @@ func Test_Badger_ListMessages(t *testing.T) {
 			from: exampleTime(1),
 			to:   exampleTime(5),
 			expectBatch: Batch{
-				Messages: []Message{add[2].m, add[1].m, add[0].m},
+				Messages: []StoredMessage{stored[2], stored[1], stored[0]},
 			},
 		},
 		{
@@ -128,7 +131,7 @@ func Test_Badger_ListMessages(t *testing.T) {
 			from: exampleTime(2),
 			to:   exampleTime(4),
 			expectBatch: Batch{
-				Messages: []Message{add[1].m},
+				Messages: []StoredMessage{stored[1]},
 			},
 		},
 		{
@@ -136,7 +139,7 @@ func Test_Badger_ListMessages(t *testing.T) {
 			from: exampleTime(3),
 			to:   exampleTime(3),
 			expectBatch: Batch{
-				Messages: []Message{add[1].m},
+				Messages: []StoredMessage{stored[1]},
 			},
 		},
 		{
@@ -145,7 +148,7 @@ func Test_Badger_ListMessages(t *testing.T) {
 			to:    exampleTime(5),
 			limit: 1,
 			expectBatch: Batch{
-				Messages: []Message{add[2].m},
+				Messages: []StoredMessage{stored[2]},
 				Next:     []byte("logs:00946684803000000000:1"),
 			},
 		},
@@ -156,7 +159,7 @@ func Test_Badger_ListMessages(t *testing.T) {
 			after: []byte("logs:00946684803000000000:1"),
 			limit: 2,
 			expectBatch: Batch{
-				Messages: []Message{add[1].m, add[0].m},
+				Messages: []StoredMessage{stored[1], stored[0]},
 			},
 		},
 		{
@@ -168,7 +171,7 @@ func Test_Badger_ListMessages(t *testing.T) {
 				return ok && v == "d"
 			},
 			expectBatch: Batch{
-				Messages: []Message{add[1].m},
+				Messages: []StoredMessage{stored[1]},
 			},
 		},
 	}
@@ -207,7 +210,7 @@ func Test_Badger_StreamMessages(t *testing.T) {
 		{Message(`{"c": "d"}`), exampleTime(3)},
 		{Message(`{"e": "f", "field": 1337}`), exampleTime(5)},
 	}
-	expectBatch := Batch{Messages: []Message{add[0].m}}
+	expectBatch := Batch{Messages: []StoredMessage{{M: add[0].m, ID: messageKey(add[0].t, 0)}}}
 	expectChMessages := []Message{add[2].m}
 
 	b := openTestBadger(t)

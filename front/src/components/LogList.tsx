@@ -1,7 +1,8 @@
 import { Card } from "flowbite-react";
+import * as api from "../lib/api/telemetry";
 
 type Props = {
-  messages: string[];
+  messages: api.LogMessage[];
   error?: { title: string; info: string };
 };
 
@@ -38,9 +39,9 @@ function LogList(props: Props) {
             info={props.error.info}
           ></ErrorCard>
         ) : (
-          props.messages.map((message) => {
+          props.messages.map((m) => {
             // TODO: use message ID from the database once it's available in the API
-            return <MessageCard message={message} key={message}></MessageCard>;
+            return <MessageCard message={m.message} key={m.id}></MessageCard>;
           })
         )}
       </div>
