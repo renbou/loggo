@@ -1,0 +1,15 @@
+services:
+  app:
+    build: .
+    init: true
+    restart: unless-stopped
+  loggo:
+    # Use latest available version for example.
+    # Generally, you should pin a specific version to avoid getting
+    # any breaking changes while loggo hasn't reached v1.
+    image: loggo:latest
+    ports:
+      # 20080 is the standard web interface port for loggo,
+      # while 20081 is the gRPC API used by the "pigeon" clients to send logs to the hq
+      - "20080:20080"
+    restart: unless-stopped
