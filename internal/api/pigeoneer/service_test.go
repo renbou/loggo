@@ -279,5 +279,5 @@ func Test_Service_Dispatch_StopDuringStream(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("github.com/golang/glog.(*loggingT).flushDaemon"))
+	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("github.com/golang/glog.(*fileSink).flushDaemon"))
 }
