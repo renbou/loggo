@@ -164,6 +164,7 @@ func setupBadger(path string) (*storage.Badger, error) {
 	// :TODO: add configuration for some Badger options
 	return storage.NewBadger(
 		badger.DefaultOptions(path).
+			WithValueLogFileSize(1 << 27). // 128 MB instead of 1G so that it works on lower-memory machines
 			WithLogger(nil),
 	)
 }
