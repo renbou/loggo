@@ -1,2 +1,8 @@
 **/node_modules
 **/dist
+.github
+.bin
+.gitattributes
+.gitignore
+LICENSE
+README.md
