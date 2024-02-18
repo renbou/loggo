@@ -67,7 +67,7 @@ func (s *Service) Stop() {
 // to be persisted to storage, and new ones to not be accepted. If a simple grpcServer.Stop() is used, we might
 // fail to send an "ACK" back to the client, resulting in duplicates.
 // Note: there might still be duplicates if an ACK was failed to be sent,
-// however that should happen only in cases when the actuall network connection has been broken.
+// however that should happen only in cases when the actual network connection has been broken.
 func (s *Service) Dispatch(stream pb.Pigeoneer_DispatchServer) error {
 	serverClosed := status.Error(codes.Unavailable, "pigeoneer stopping")
 	pigeonName := mw.PigeonNameFromCtx(stream.Context())
@@ -79,8 +79,8 @@ func (s *Service) Dispatch(stream pb.Pigeoneer_DispatchServer) error {
 	s.mu.RUnlock()
 	defer s.wg.Done()
 
-	// Check this before actually adding to the WaitGroup. If this check isn't made, then we might get a message
-	// first, instead of the s.done signal, since the order in select isn't defined when multiple channels are ready.
+	// If this check isn't made, then we might get a message first instead of the s.done signal,
+	// since the order in select isn't defined when multiple channels are ready.
 	if s.isClosed() {
 		return serverClosed
 	}
