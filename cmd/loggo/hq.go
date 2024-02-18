@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dgraph-io/badger/v3"
+	"github.com/dgraph-io/badger/v4"
 	"github.com/gin-gonic/gin"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/renbou/loggo/internal/api/pigeoneer"
