@@ -4,6 +4,13 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      latest:
+        description: "Publish as latest"
+        required: true
+        type: boolean
+        default: false
 permissions:
   packages: write
 jobs:
@@ -32,6 +39,7 @@ jobs:
           images: ghcr.io/renbou/loggo
           tags: |
             type=semver,pattern={{version}}
+            type=raw,value=latest,enable=${{ inputs.latest == true }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
