@@ -2,7 +2,7 @@ name: Publish package
 on:
   push:
     tags:
-      - "*"
+      - "v*"
 jobs:
   package:
     runs-on: ubuntu-latest
@@ -16,3 +16,24 @@ jobs:
           go-version-file: go.mod
       - name: Run tests
         run: make test
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/renbou/loggo
+          tags: |
+            type=semver,pattern={{version}}
+      - name: Build and publish image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: deploy/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
