@@ -1,0 +1,18 @@
+[tool.poetry]
+authors = ["renbou"]
+description = "Basic example showcasing a fully working log aggregation setup with loggo."
+license = "MIT"
+name = "loggo-example"
+packages = [{ include = "app.py" }]
+version = "0.1.0"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+structlog = "^24.1.0"
+
+[tool.poetry.scripts]
+app = "app:main"
+
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core"]
