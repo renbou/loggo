@@ -3,6 +3,8 @@ on:
   push:
     tags:
       - "v*"
+permissions:
+  packages: write
 jobs:
   package:
     runs-on: ubuntu-latest
@@ -37,3 +39,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
