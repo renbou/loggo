@@ -5,6 +5,7 @@ on:
       - "*"
 jobs:
   package:
+    runs-on: ubuntu-latest
     name: Test, build, and publish
     steps:
       - name: Checkout repository
